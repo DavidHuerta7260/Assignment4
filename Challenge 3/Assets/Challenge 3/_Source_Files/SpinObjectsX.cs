@@ -1,4 +1,9 @@
-﻿using System.Collections;
+﻿/*
+David Huerta
+Challenge 3
+Spins objects for visual effect.
+*/
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 

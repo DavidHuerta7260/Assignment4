@@ -1,24 +1,28 @@
-﻿using System.Collections;
+﻿/*
+David Huerta
+Challenge 3
+Moves objects left and stops on game over.
+*/
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class MoveLeftX : MonoBehaviour
 {
-    public float speed;
-    private PlayerControllerX playerControllerScript;
-    private float leftBound = -10;
+    public float speed = 15f;
 
-    // Start is called before the first frame update
+    private PlayerControllerX playerControllerScript;
+    private float leftBound = -10f;
+
     void Start()
     {
         playerControllerScript = GameObject.Find("Player").GetComponent<PlayerControllerX>();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        // If game is not over, move to the left
-        if (playerControllerScript.gameOver)
+        // If game is NOT over, move to the left
+        if (playerControllerScript != null && !playerControllerScript.gameOver)
         {
             transform.Translate(Vector3.left * speed * Time.deltaTime, Space.World);
         }
@@ -28,6 +32,5 @@ public class MoveLeftX : MonoBehaviour
         {
             Destroy(gameObject);
         }
-
     }
 }

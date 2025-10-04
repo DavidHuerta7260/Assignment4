@@ -1,39 +1,56 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿/*
+David Huerta
+Challenge 3
+Controls balloon movement and collisions.
+*/
 using UnityEngine;
 
 public class PlayerControllerX : MonoBehaviour
 {
-    public bool gameOver;
+    [Header("State")]
+    public bool gameOver = false;
 
-    public float floatForce;
+    [Header("Float Settings")]
+    public float floatForce = 8f;
+    public float groundBounceImpulse = 6f;
+    public float topLimit = 16f;
     private float gravityModifier = 1.5f;
-    private Rigidbody playerRb;
 
+    [Header("FX")]
     public ParticleSystem explosionParticle;
     public ParticleSystem fireworksParticle;
 
+    [Header("Audio")]
     private AudioSource playerAudio;
     public AudioClip moneySound;
     public AudioClip explodeSound;
+    public AudioClip groundBounceClip;
 
+    private Rigidbody playerRb;
 
-    // Start is called before the first frame update
     void Start()
     {
-        Physics.gravity *= gravityModifier;
+        if (Physics.gravity.y > -10)
+        {
+            Physics.gravity *= gravityModifier;
+        }
+
+        playerRb = GetComponent<Rigidbody>();
+        if (!playerRb) Debug.LogError("PlayerControllerX: Missing Rigidbody!");
+
         playerAudio = GetComponent<AudioSource>();
 
-        // Apply a small upward force at the start of the game
-        playerRb.AddForce(Vector3.up * 5, ForceMode.Impulse);
-
+        // small initial lift
+        if (playerRb) playerRb.AddForce(Vector3.up * 5f, ForceMode.Impulse);
     }
 
-    // Update is called once per frame
     void Update()
     {
-        // While space is pressed and player is low enough, float up
-        if (Input.GetKey(KeyCode.Space) && !gameOver)
+        if (gameOver || playerRb == null) return;
+
+        bool isLowEnough = transform.position.y < topLimit;
+
+        if (Input.GetKey(KeyCode.Space) && isLowEnough)
         {
             playerRb.AddForce(Vector3.up * floatForce);
         }
@@ -41,25 +58,38 @@ public class PlayerControllerX : MonoBehaviour
 
     private void OnCollisionEnter(Collision other)
     {
-        // if player collides with bomb, explode and set gameOver to true
+        if (gameOver) return;
+
+        // Bomb → explode + end game + UI
         if (other.gameObject.CompareTag("Bomb"))
         {
-            explosionParticle.Play();
-            playerAudio.PlayOneShot(explodeSound, 1.0f);
-            gameOver = true;
-            Debug.Log("Game Over!");
-            Destroy(other.gameObject);
-        } 
+            if (explosionParticle) explosionParticle.Play();
+            if (playerAudio && explodeSound) playerAudio.PlayOneShot(explodeSound, 1f);
 
-        // if player collides with money, fireworks
+            gameOver = true;
+            if (GameManagerX.Instance) GameManagerX.Instance.GameOver();
+
+            Destroy(other.gameObject);
+        }
+        // Money → fireworks + sfx + score++
         else if (other.gameObject.CompareTag("Money"))
         {
-            fireworksParticle.Play();
-            playerAudio.PlayOneShot(moneySound, 1.0f);
+            if (fireworksParticle)
+            {
+                fireworksParticle.transform.position = transform.position;
+                fireworksParticle.Play();
+            }
+            if (playerAudio && moneySound) playerAudio.PlayOneShot(moneySound, 1f);
+
+            if (GameManagerX.Instance) GameManagerX.Instance.AddScore(1);
+
             Destroy(other.gameObject);
-
         }
-
+        // Ground → bounce + thud
+        else if (other.gameObject.CompareTag("Ground"))
+        {
+            if (playerRb) playerRb.AddForce(Vector3.up * groundBounceImpulse, ForceMode.Impulse);
+            if (playerAudio && groundBounceClip) playerAudio.PlayOneShot(groundBounceClip, 1f);
+        }
     }
-
 }
